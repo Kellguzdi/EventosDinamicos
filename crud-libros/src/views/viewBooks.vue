@@ -10,7 +10,7 @@
       <h3 style="margin-top: 20px">Agregar libro por drop</h3>
     </b-row>
     <b-row class="d-flex justify-content-center">
-      <form>
+      <form v-show="formVisible">
         <b-form-group label="Título:" label-for="title">
           <b-form-input v-model="newBook.title" id="title" required />
         </b-form-group>
@@ -134,6 +134,7 @@
         :img-src="book.image"
         img-alt="imagen"
         img-top
+        img-height="250px"
         style="max-width: 15rem; margin: 10px"
         class="mb-2 card"
         @mouseover="showButtons(index)"
@@ -180,6 +181,7 @@
 import Vue from "vue";
 import bookService from "../books/Book";
 import categoriesService from "../categories/Category";
+import authorsService from "../authors/Author";
 
 export default Vue.extend({
   components: {
@@ -219,11 +221,14 @@ export default Vue.extend({
       },
       authors: [],
       categories: [],
+      formVisible: true,
     };
   },
   mounted() {
     this.getBooks();
     this.getCategories();
+    this.getAuthors();
+    window.addEventListener("scroll", this.handleScroll);
   },
   methods: {
     async getBooks() {
@@ -296,6 +301,14 @@ export default Vue.extend({
         console.log(error);
       }
     },
+    async getAuthors() {
+      try {
+        const data = await authorsService.getAuthors();
+        this.authors = data.data;
+      } catch (error) {
+        console.log(error);
+      }
+    },
     openAddBookModal() {
       this.$nextTick(() => {
         this.$bvModal.show("addBookModal");
@@ -329,6 +342,9 @@ export default Vue.extend({
     },
     formatDate(date) {
       return new Date(date).getFullYear();
+    },
+    handleScroll() {
+      this.formVisible = window.scrollY < 105;
     },
   },
 });
