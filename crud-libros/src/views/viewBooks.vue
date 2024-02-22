@@ -1,177 +1,191 @@
 <template>
   <b-container fluid>
-    <b-row>
-      <b-col>
-        <h1 style="text-align: center; margin-top: 10px">Books</h1>
-      </b-col>
-    </b-row>
-    <hr />
-    <b-row class="d-flex justify-content-center">
-      <h3 style="margin-top: 20px">Agregar libro por drop</h3>
-    </b-row>
-    <b-row class="d-flex justify-content-center">
-      <form v-show="formVisible">
-        <b-form-group label="Título:" label-for="title">
-          <b-form-input v-model="newBook.title" id="title" required />
-        </b-form-group>
-        <b-form-group label="Autor:" label-for="author">
-          <b-form-select
-            v-model="newBook.autor.id"
-            :options="authors"
-            value-field="id"
-            text-field="name"
-            required
-          />
-        </b-form-group>
-        <b-form-group label="Género:" label-for="category">
-          <b-form-select
-            v-model="newBook.categoria.id"
-            :options="categories"
-            value-field="id"
-            text-field="nameCategory"
-            required
-          />
-        </b-form-group>
-        <b-form-group label="Año de publicación:" label-for="issueDate">
-          <b-form-input
-            v-model="newBook.issueDate"
-            id="issueDate"
-            type="number"
-            required
-          />
-        </b-form-group>
-        <b-form-group label="Imagen:" label-for="image">
-          <b-form-input v-model="newBook.image" id="image" required />
-        </b-form-group>
-      </form>
-    </b-row>
-    <hr />
-    <b-row>
-      <b-col class="d-flex justify-content-center">
-        <b-button
-          variant="info"
-          @click="openAddBookModal()"
-          style="margin: 10px"
-        >
-          Añadir libro
-        </b-button>
-      </b-col>
-    </b-row>
-    <ModalSpinner :isLoading="isLoading" />
-    <b-row class="justify-content-center mt-3">
-      <b-col cols="5" v-if="filter === 'title' || filter === 'author'">
-        <b-form-group label="Buscar libro:" label-for="searchInput">
-          <b-form-input
-            v-model="textFilter"
-            placeholder="Mil Noches"
-            type="text"
-            id="searchInput"
-            @input="getBooksByTitleOrAuthor()"
-          />
-        </b-form-group>
-      </b-col>
-      <b-col cols="5" v-else-if="filter === 'category'">
-        <b-form-group label="Buscar genero:" label-for="categorySelect">
-          <b-form-select
-            v-model="selectedCategory"
-            :options="categories"
-            value-field="nameCategory"
-            text-field="nameCategory"
-            id="categorySelect"
-            @change="getBooksByCategory()"
-          />
-        </b-form-group>
-      </b-col>
-      <b-row v-else-if="filter === 'dateRange'">
-        <b-col cols="4">
-          <b-form-group label="Año inicial:" label-for="inicialYear">
-            <b-form-input
-              v-model="fechaInicio"
-              type="number"
-              placeholder="2021"
-              id="inicialYear"
-            />
-          </b-form-group>
-        </b-col>
-        <b-col cols="4">
-          <b-form-group label="Año final:" label-for="finalYear">
-            <b-form-input
-              v-model="fechaFinal"
-              type="number"
-              placeholder="2024"
-              id="finalYear"
-            />
-          </b-form-group>
-        </b-col>
-        <b-col cols="4">
-          <b-form-group label="Filtrar entre años:" label-for="buttonFilter">
-            <b-button @click="getBooksByDateRange()">Buscar</b-button>
-          </b-form-group>
-        </b-col>
-      </b-row>
-      <b-col cols="5" v-else>
-        <b-form-group label="Order por año de publicación:">
-          <b-button @click="getBooksByDateDesc()"
-            >Odernar descendentemente</b-button
-          >
-        </b-form-group>
-      </b-col>
-      <b-col cols="5">
-        <b-form-group label="Realizar busqueda por:" label-for="searchSelect">
-          <b-form-select
-            v-model="filter"
-            :options="options"
-            id="searchSelect"
-          />
-        </b-form-group>
-      </b-col>
-    </b-row>
-    <b-row class="justify-content-center" v-if="!isLoading">
-      <b-card
-        v-for="(book, index) in books"
-        :key="index"
-        :title="book.title"
-        :img-src="book.image"
-        img-alt="imagen"
-        img-top
-        img-height="250px"
-        style="max-width: 15rem; margin: 10px"
-        class="mb-2 card"
-        @mouseover="showButtons(index)"
-        @mouseleave="hideButtons(index)"
-        v-bind:style="{ animationDelay: `${index * 0.1}s` }"
+    <div class="drop-zone" @drop="onDrop($event,1)" @dragover.prevent @dragenter.prevent>
+      <div
+          class="drag-el"
+          draggable="true"
+          @dragstart="handleDragStart"
+          @dragend="handleDragEnd"
       >
-        <b-card-text>
-          <b-row>
-            <b-col>
-              <b-card-text
-                >Autor: {{ book.autor && book.autor.name }}</b-card-text
-              >
-              <b-card-text
-                >Genero:
-                {{ book.categoria && book.categoria.nameCategory }}</b-card-text
-              >
-              <b-card-text
-                >Año de publicación:
-                {{ formatDate(book.issueDate) }}</b-card-text
-              >
-            </b-col>
-          </b-row>
-        </b-card-text>
-        <b-row v-if="showButtonsIndex === index" class="text-center">
+        <b-row>
           <b-col>
-            <b-button variant="warning" @click="openEditBookModal(book)"
-              ><font-awesome-icon icon="fa-solid fa-pen-to-square"
-            /></b-button>
-          </b-col>
-          <b-col>
-            <b-button variant="danger" @click="deleteBook(index)"
-              ><font-awesome-icon icon="fa-solid fa-trash"
-            /></b-button>
+            <h1 style="text-align: center; margin-top: 10px">Books</h1>
           </b-col>
         </b-row>
-      </b-card>
-    </b-row>
+        <hr />
+        <b-row class="d-flex justify-content-center">
+          <h3 style="margin-top: 20px">Agregar libro por drop</h3>
+        </b-row>
+        <b-row class="d-flex justify-content-center">
+          <form v-show="formVisible">
+            <b-form-group label="Título:" label-for="title">
+              <b-form-input v-model="newBook.title" id="title" required />
+            </b-form-group>
+            <b-form-group label="Autor:" label-for="author">
+              <b-form-select
+                  v-model="newBook.autor.id"
+                  :options="authors"
+                  value-field="id"
+                  text-field="name"
+                  required
+              />
+            </b-form-group>
+            <b-form-group label="Género:" label-for="category">
+              <b-form-select
+                  v-model="newBook.categoria.id"
+                  :options="categories"
+                  value-field="id"
+                  text-field="nameCategory"
+                  required
+              />
+            </b-form-group>
+            <b-form-group label="Año de publicación:" label-for="issueDate">
+              <b-form-input
+                  v-model="newBook.issueDate"
+                  id="issueDate"
+                  type="number"
+                  required
+              />
+            </b-form-group>
+            <b-form-group label="Imagen:" label-for="image">
+              <b-form-input v-model="newBook.image" id="image" required />
+            </b-form-group>
+          </form>
+        </b-row>
+      </div>
+    </div>
+    <hr />
+    <div class="drop-zone" @dragover.prevent @dragenter.prevent @drop="handleDrop">
+
+        <b-row>
+          <b-col class="d-flex justify-content-center">
+            <b-button
+                variant="info"
+                @click="openAddBookModal()"
+                style="margin: 10px"
+            >
+              Añadir libro
+            </b-button>
+          </b-col>
+        </b-row>
+        <ModalSpinner :isLoading="isLoading" />
+        <b-row class="justify-content-center mt-3">
+          <b-col cols="5" v-if="filter === 'title' || filter === 'author'">
+            <b-form-group label="Buscar libro:" label-for="searchInput">
+              <b-form-input
+                  v-model="textFilter"
+                  placeholder="Mil Noches"
+                  type="text"
+                  id="searchInput"
+                  @input="getBooksByTitleOrAuthor()"
+              />
+            </b-form-group>
+          </b-col>
+          <b-col cols="5" v-else-if="filter === 'category'">
+            <b-form-group label="Buscar genero:" label-for="categorySelect">
+              <b-form-select
+                  v-model="selectedCategory"
+                  :options="categories"
+                  value-field="nameCategory"
+                  text-field="nameCategory"
+                  id="categorySelect"
+                  @change="getBooksByCategory()"
+              />
+            </b-form-group>
+          </b-col>
+          <b-row v-else-if="filter === 'dateRange'">
+            <b-col cols="4">
+              <b-form-group label="Año inicial:" label-for="inicialYear">
+                <b-form-input
+                    v-model="fechaInicio"
+                    type="number"
+                    placeholder="2021"
+                    id="inicialYear"
+                />
+              </b-form-group>
+            </b-col>
+            <b-col cols="4">
+              <b-form-group label="Año final:" label-for="finalYear">
+                <b-form-input
+                    v-model="fechaFinal"
+                    type="number"
+                    placeholder="2024"
+                    id="finalYear"
+                />
+              </b-form-group>
+            </b-col>
+            <b-col cols="4">
+              <b-form-group label="Filtrar entre años:" label-for="buttonFilter">
+                <b-button @click="getBooksByDateRange()">Buscar</b-button>
+              </b-form-group>
+            </b-col>
+          </b-row>
+          <b-col cols="5" v-else>
+            <b-form-group label="Order por año de publicación:">
+              <b-button @click="getBooksByDateDesc()"
+              >Odernar descendentemente</b-button
+              >
+            </b-form-group>
+          </b-col>
+          <b-col cols="5">
+            <b-form-group label="Realizar busqueda por:" label-for="searchSelect">
+              <b-form-select
+                  v-model="filter"
+                  :options="options"
+                  id="searchSelect"
+              />
+            </b-form-group>
+          </b-col>
+        </b-row>
+        <b-row class="justify-content-center" v-if="!isLoading">
+          <b-card
+              v-for="(book, index) in books"
+              :key="index"
+              :title="book.title"
+              :img-src="book.image"
+              img-alt="imagen"
+              img-top
+              img-height="250px"
+              style="max-width: 15rem; margin: 10px"
+              class="mb-2 card"
+              @mouseover="showButtons(index)"
+              @mouseleave="hideButtons(index)"
+              v-bind:style="{ animationDelay: `${index * 0.1}s` }"
+          >
+            <b-card-text>
+              <b-row>
+                <b-col>
+                  <b-card-text
+                  >Autor: {{ book.autor && book.autor.name }}</b-card-text
+                  >
+                  <b-card-text
+                  >Genero:
+                    {{ book.categoria && book.categoria.nameCategory }}</b-card-text
+                  >
+                  <b-card-text
+                  >Año de publicación:
+                    {{ formatDate(book.issueDate) }}</b-card-text
+                  >
+                </b-col>
+              </b-row>
+            </b-card-text>
+            <b-row v-if="showButtonsIndex === index" class="text-center">
+              <b-col>
+                <b-button variant="warning" @click="openEditBookModal(book)"
+                ><font-awesome-icon icon="fa-solid fa-pen-to-square"
+                /></b-button>
+              </b-col>
+              <b-col>
+                <b-button variant="danger" @click="deleteBook(index)"
+                ><font-awesome-icon icon="fa-solid fa-trash"
+                /></b-button>
+              </b-col>
+            </b-row>
+          </b-card>
+        </b-row>
+
+    </div>
+
     <AddBookModal @bookAdded="refreshBookList" />
     <EditBookModal @bookEdited="refreshBookList" :book="selectedBook" />
   </b-container>
@@ -231,6 +245,53 @@ export default Vue.extend({
     window.addEventListener("scroll", this.handleScroll);
   },
   methods: {
+    handleDragStart(event) {
+      // Indica qué información se está arrastrando
+      event.dataTransfer.setData('text/plain', 'form-data');
+      this.dragging = true;
+    },
+    handleDragEnd() {
+      this.dragging = false;
+    },
+    handleDrop(event) {
+      if (this.dragging) {
+        // Aquí se envía la información del formulario
+        this.addBook();
+      }
+    },
+    async addBook() {
+      this.isLoading = true;
+      try {
+        const publicationDate = new Date(this.newBook.issueDate, 0, 1);
+        this.newBook.issueDate = publicationDate;
+        const response = await bookService.addBook(this.newBook);
+
+        if (!response.error) {
+          this.isLoading = false;
+          this.resetForm();
+          this.$emit("bookAdded");
+          this.$bvModal.hide("addBookModal");
+          window.reload();
+        }
+      } catch (error) {
+        console.log(error);
+        this.isLoading = false;
+      }
+    },
+    resetForm(){
+      this.newBook = {
+        title: "",
+        autor: {
+          id: null,
+        },
+        categoria: {
+          id: null,
+        },
+        issueDate: null,
+        image: "",
+      };
+    },
+
     async getBooks() {
       try {
         const data = await bookService.getBooks();
@@ -347,6 +408,15 @@ export default Vue.extend({
       this.formVisible = window.scrollY < 105;
     },
   },
+  computed:{
+    listOne(){
+      return this.books.filter(item => item.list === 1);
+    },
+    listTwo(){
+      return this.books.filter(item => item.list === 2);
+    }
+
+  }
 });
 </script>
 
