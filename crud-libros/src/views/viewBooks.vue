@@ -57,17 +57,8 @@
     <hr />
     <div class="drop-zone" @dragover.prevent @dragenter.prevent @drop="handleDrop">
 
-        <b-row>
-          <b-col class="d-flex justify-content-center">
-            <b-button
-                variant="info"
-                @click="openAddBookModal()"
-                style="margin: 10px"
-            >
-              Añadir libro
-            </b-button>
-          </b-col>
-        </b-row>
+
+
         <ModalSpinner :isLoading="isLoading" />
         <b-row class="justify-content-center mt-3">
           <b-col cols="5" v-if="filter === 'title' || filter === 'author'">
